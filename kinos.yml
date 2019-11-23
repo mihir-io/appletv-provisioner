@@ -1,0 +1,49 @@
+---
+# This playbook provisions Kinos on the 1st generation Apple TV to prepare
+# it for automated Transmission downloads.
+
+- name: Configure Kinos
+  hosts: all
+  remote_user: atv
+  vars:
+    temp_directory: /tmp/anible-run
+
+  tasks:
+    - name: Install packages
+      apt:
+        pkg:
+          - mediainfo
+          - curl
+        state: present
+        update_cache: yes
+        force_apt_get: yes
+      become: yes
+      become_user: root
+
+    - name: Create a directory if it does not exist
+      file:
+        path: {{ temp_directory }}
+        state: directory
+        mode: '0755'
+
+    - name: Download ffmpeg
+      unarchive:
+        src: https://github.com/vot/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-linux-32.zip
+        dest: {{ temp_directory }}
+        remote_src: yes
+
+    - name: Copy 'ffmpeg' to /usr/local/bin/
+      copy:
+        src: {{ temp_directory }}
+        dest: /usr/local/bin/ffmpeg
+        owner: root
+        group: root
+        mode: 0755
+        remote_src: yes
+      become: yes
+      become_user: root
+
+    - name: Clean up ffmpeg temp files
+      file:
+        path: {{ temp_directory }}
+        state: absent
