@@ -4,7 +4,7 @@ Apple TV Ansible
 This repo is nothing more than a simple Ansible playbook to provision my
 first generation Apple TV running
 [Kinos](https://forum.kodi.tv/showthread.php?tid=313407) by Soli. Right now
-it's not much, but there are planned improvements for Kinos to run Ubuntu 10.04,
+it's not much, but there are planned improvements for Kinos to run Ubuntu 18.04,
 at which point I expect it to be more capable, and so I'll probably expand on
 this playbook then.
 
