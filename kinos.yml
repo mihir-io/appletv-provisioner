@@ -1,12 +1,16 @@
 ---
-# This playbook provisions Kinos on the 1st generation Apple TV to prepare
-# it for automated Transmission downloads.
+# Name: kinos.yml
+# Author: Mihir Joshi
+# Description: This playbook provisions Kinos on the 1st generation Apple TV to
+# provision it with a newer FFmpeg for file conversions, as well as a newer 
+# version of 'libass', which is responsible for displaying SubStation Alpha
+# subtitles, which are broken out of the box without this change.
 
 - name: Configure Kinos
   hosts: all
   remote_user: atv
   vars:
-    temp_directory: /tmp/anible-run
+    temp_directory: /tmp/ansible-run
 
   tasks:
     - name: Install packages
@@ -20,21 +24,21 @@
       become: yes
       become_user: root
 
-    - name: Create a directory if it does not exist
+    - name: Create a temp directory if it does not exist
       file:
-        path: {{ temp_directory }}
+        path: "{{ temp_directory }}"
         state: directory
         mode: '0755'
 
     - name: Download ffmpeg
       unarchive:
         src: https://github.com/vot/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-linux-32.zip
-        dest: {{ temp_directory }}
+        dest: "{{ temp_directory }}"
         remote_src: yes
 
     - name: Copy 'ffmpeg' to /usr/local/bin/
       copy:
-        src: {{ temp_directory }}
+        src: "{{ temp_directory }}/ffmpeg"
         dest: /usr/local/bin/ffmpeg
         owner: root
         group: root
@@ -45,5 +49,55 @@
 
     - name: Clean up ffmpeg temp files
       file:
-        path: {{ temp_directory }}
+        path: "{{ temp_directory }}"
         state: absent
+
+    - name: Download libass 0.10.1 source
+      unarchive:
+        src: https://ftp.osuosl.org/pub/blfs/conglomeration/libass/libass-0.10.1.tar.xz
+        dest: /home/atv/
+        remote_src: yes
+
+    - name: Install libass-0.10.1 dependencies
+      apt:
+        pkg:
+          - libfontconfig1-dev
+          - libfribidi-dev
+        state: present
+        update_cache: yes
+        force_apt_get: yes
+      become: yes
+      become_user: root
+
+    - name: Purge existing libass
+      apt:
+        pkg:
+          - libass4
+          - libass-dev
+        state: absent
+        purge: yes
+        force_apt_get: yes
+      become: yes
+      become_user: root
+
+    - name: Configure libass-0.10.1
+      command:
+        cmd: ./configure --prefix=/usr --disable-static
+        chdir: /home/atv/libass-0.10.1
+
+    - name: Build libass-0.10.1
+      make:
+        chdir: /home/atv/libass-0.10.1
+
+    - name: Install libass-0.10.1
+      make:
+        target: install
+        chdir: /home/atv/libass-0.10.1
+      become: yes
+      become_user: root
+
+    - name: Clean up libass-0.10.1 temp files
+      file:
+        path: "/home/atv/libass-0.10.1"
+        state: absent
+
